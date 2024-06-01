@@ -1,0 +1,17 @@
+[package]
+name = "trassh"
+version = "0.1.0"
+edition = "2021"
+author = "0x00snape"
+
+[dependencies]
+nix = { version = "0.29.0", features = ["ptrace"] }
+sysinfo = "0.30.12"
+sysnames = "0.1.3"
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = 'abort'
+strip = true
+codegen-units = 1
