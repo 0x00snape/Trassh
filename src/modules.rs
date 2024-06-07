@@ -121,7 +121,7 @@ pub fn decoder(pid: Pid, addr: AddressType) -> String {
     let mut string = String::new();
     let mut check = 0;
 
-    `done: loop {
+    'done: loop {
 
         let mut bytes: Vec<_> = Vec::new();
         let res = match ptrace::read(pid, addr as AddressType) {
