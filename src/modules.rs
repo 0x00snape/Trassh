@@ -121,11 +121,13 @@ pub fn decoder(pid: Pid, addr: AddressType) -> String {
     let mut string = String::new();
     let mut check = 0;
 
-    loop {
+    `done: loop {
 
         let mut bytes: Vec<_> = Vec::new();
-        let res = nix::sys::ptrace::read(pid, addr as nix::sys::ptrace::AddressType).unwrap();
-
+        let res = match ptrace::read(pid, addr as AddressType) {
+                            Ok(s) => s,
+                            Err(_) => break 'done,
+                        };
 
         bytes.write_i64::<LittleEndian>(res).unwrap_or_else(|err| {
             panic!("Error to write {} as i64 LittleEndian: {}", res, err);
