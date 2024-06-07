@@ -13,4 +13,4 @@ Uses the sudo privilege keep that in mind.
 :$ sudo ./trassh
 ```
 ## License
-This project is licensed under [MIT](https://github.com/0x00snape/XorLock/blob/main/LICENSE)
+This project is licensed under [MIT](https://github.com/0x00snape/Trassh/blob/main/LICENSE)
