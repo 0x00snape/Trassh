@@ -9,6 +9,7 @@ fn main() {
         println!("{}PID of SSHD:{}", "\t".repeat(6),pid);
         
         let child_pid = modules::checkTHREAD(pid);
+        println!("\n{}PID of Child:{}", "\t".repeat(6), child_pid);
 
         // Child lookup in syscall
         modules::debugTHREAD(child_pid);
