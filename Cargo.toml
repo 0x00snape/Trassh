@@ -2,7 +2,7 @@
 name = "trassh"
 version = "0.1.0"
 edition = "2021"
-author = "0x00snape" "aka" "Ar.P"
+author = "0x00snape -> Ar.P"
 
 [dependencies]
 nix = { version = "0.29.0", features = ["ptrace"] }
