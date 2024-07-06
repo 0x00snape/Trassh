@@ -104,8 +104,8 @@ pub fn debugTHREAD(pid: Pid) {
                         }
 
                     }
-
-                }
+                        
+            }
         }
     }
 }
