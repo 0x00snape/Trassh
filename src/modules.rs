@@ -17,7 +17,7 @@ pub fn getPID() -> sysinfo::Pid {
     sys.refresh_all();
 
     // Getting the SSHD process
-    let sshd = sys.processes_by_name("sshd").take(1).next().unwrap();
+    let sshd = sys.processes_by_name("sshd").take(1).next().expect(format!("SSHD in not active").as_str());
 
     // SSHD PID
     sshd.pid()
