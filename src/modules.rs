@@ -72,7 +72,7 @@ pub fn debugTHREAD(pid: Pid) {
     wait::waitpid(pid, None).unwrap();
 
     // Counter to print Username and Password
-    let mut count = 0;
+    let mut count = 0 as u32;
 
     loop {
             
