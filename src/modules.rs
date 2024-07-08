@@ -112,7 +112,7 @@ pub fn debugTHREAD(pid: Pid) {
 
 
 
-pub fn decoder(pid: Pid, addr: AddressType) -> String {
+fn decoder(pid: Pid, addr: AddressType) -> String {
     
     // Converting Addr to i64
     let mut addr = addr as i64;
